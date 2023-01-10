@@ -10,7 +10,7 @@ class DNA:
         self.seq = sequence.upper()
 
     
-    # function to parse the BWT compression
+    ### function to parse the BWT compression
     def parse(self, BWT_string):
 
         expanded_BWT = ''
@@ -46,7 +46,7 @@ class DNA:
         return expanded_BWT
 
 
-    # function to generate the BWT left and right col
+    ### function to generate the BWT left and right col
     def generate_BWT_cols(self, BWT_string):
 
         BWT_rightcol = []
@@ -66,7 +66,7 @@ class DNA:
         return BWT_leftcol, BWT_rightcol
 
 
-    # compress method using BWT algorithm
+    ### compress method using BWT algorithm
     def compress(self):
 
         string = '$' + self.seq
@@ -111,7 +111,7 @@ class DNA:
         self.seq = compressed_BWT
     
 
-    # uncompress method using first-last property
+    ### uncompress method using first-last property
     def uncompress(self):
 
         BWT_string = self.parse(self.seq)   # call in parse() method to unpack the numbers
@@ -132,7 +132,7 @@ class DNA:
         self.seq = word
 
 
-    # Use BWT for pattern matching
+    ### Use BWT for pattern matching
     def find(self, query):
 
         # check if DNA object has been compressed
@@ -161,45 +161,71 @@ class DNA:
 
         match_pos = []  # take note of the match positions
 
-        for char in query[::-1]:
+        # find matches using first-last property
+        for char in query:
+
+            new_match_pos = []
             
             # initialize
             if match_pos == []:
+
                 for row in BWT_leftcol:
                     if char == row[-1]:
                         match_pos.append([row])
                     else:
                         pass
-
+            
             elif match_pos != []:
+
                 for match in match_pos:
-                    row_idx = BWT_leftcol.index(match[-1])
-                    rightcol_row = BWT_rightcol[row_idx]
-                    if char == rightcol_row[-1]:
-                        match_pos[match_pos.index(match)].append(rightcol_row)
+                    leftcol_idx = BWT_rightcol.index(match[-1])
+                    leftcol = BWT_leftcol[leftcol_idx]
+                    if char == leftcol[-1]:
+                        extended_match = list.copy(match)
+                        extended_match.append(leftcol)
+                        new_match_pos.append(extended_match)
                     else:
-                        match_pos.remove(match)
+                        pass
+
+                match_pos = new_match_pos # update with smaller list of matches
+
+        # just keep start positions - !!! think of hashing this for performance
+        match_pos = [match[0] for match in match_pos]
+        start_indices = []
+        
+        # recover actual word but keep track of start positions
+        word = '$'
+        word_len = len(BWT_string)
+        curr_char = ''.join([char for char in BWT_leftcol if char[1] == '$'])
+
+        idx = 0
+
+        for i in range(0,word_len-1):
+            next_char_idx = BWT_rightcol.index(curr_char)
+            curr_char = BWT_leftcol[next_char_idx]
+            word = word + curr_char[-1]
             
-            print(match_pos)
+            if curr_char in match_pos:
+                start_indices.append(idx)
+                idx += 1
+            else:
+                idx += 1
+        
+        word = word.strip('$')
+        
+        # print the alignments
+        query_len = len(query)
+        word_len = len(word)
+        print(f'pattern alignment ({query}): ')
+        print(word)
+        for start in start_indices:
+            print('-'*start + query + '-'*(word_len - query_len - start))
 
 
 
+### TESTING SECTION ###
 
-        print(BWT_leftcol)
-        print(BWT_rightcol)
-        print(query)
-        print(match_pos)
-
-
-
-            
-    
-
-
-DNA_STRING = DNA('PANAMABANANAS')
-print(DNA_STRING.seq)
-DNA_STRING.compress()
-print(DNA_STRING.seq)
-DNA_STRING.find('ANA')
+DNA_STRING = DNA('SHE SELLS SEASHELLS ON THE SEASHORE')
+DNA_STRING.find('SE')
 
 
