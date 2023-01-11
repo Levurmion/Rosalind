@@ -3,4 +3,3 @@
 ###
 - quite verbose
 - some solutions may not be optimal
-- but they work
